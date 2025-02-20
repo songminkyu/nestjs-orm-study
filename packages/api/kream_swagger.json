@@ -1,0 +1,556 @@
+{
+  "openapi": "3.1.0",
+  "servers": [
+    {
+      "url": "http://localhost:37001",
+      "description": "Local Server"
+    }
+  ],
+  "info": {
+    "version": "0.1.0",
+    "title": "@ORGANIZATION/PROJECT-backend",
+    "description": "Backend for PROJECT",
+    "license": {
+      "name": "MIT"
+    }
+  },
+  "paths": {
+    "/monitors/health": {
+      "get": {
+        "summary": "Health check API",
+        "description": "Health check API.",
+        "tags": [
+          "Monitor"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {}
+            }
+          }
+        },
+        "x-samchon-accessor": [
+          "monitors",
+          "health",
+          "get"
+        ],
+        "x-samchon-controller": "MonitorHealthController"
+      }
+    },
+    "/monitors/performance": {
+      "get": {
+        "description": "New endpoint",
+        "responses": {
+          "200": {
+            "description": "New response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "": ""
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "description": "New endpoint",
+        "responses": {
+          "200": {
+            "description": "New response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "": ""
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Get performance information",
+        "description": "Get performance information.\n\nGet perofmration information composed with CPU, memory and resource usage.",
+        "tags": [
+          "Monitor"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Performance info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IPerformance"
+                }
+              }
+            }
+          }
+        },
+        "x-samchon-accessor": [
+          "monitors",
+          "performance",
+          "get"
+        ],
+        "x-samchon-controller": "MonitorPerformanceController"
+      }
+    },
+    "/monitors/system": {
+      "get": {
+        "summary": "Get system information",
+        "description": "Get system information.\n\nGet system information with commit and package information.",
+        "tags": [
+          "Monitor"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "System info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ISystem"
+                }
+              }
+            }
+          }
+        },
+        "x-samchon-accessor": [
+          "monitors",
+          "system",
+          "get"
+        ],
+        "x-samchon-controller": "MonitorSystemController"
+      }
+    },
+    "/kream/sellerinfo": {
+      "get": {
+        "summary": "Kream seller search API",
+        "description": "Kream seller search API.",
+        "tags": [
+          "Seller"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ISeller"
+                }
+              }
+            }
+          }
+        },
+        "x-samchon-accessor": [
+          "kream",
+          "sellerinfo",
+          "get"
+        ],
+        "x-samchon-controller": "KreamsellerInfoController"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "IPerformance": {
+        "type": "object",
+        "properties": {
+          "cpu": {
+            "$ref": "#/components/schemas/process.global.NodeJS.CpuUsage"
+          },
+          "memory": {
+            "$ref": "#/components/schemas/process.global.NodeJS.MemoryUsage"
+          },
+          "resource": {
+            "$ref": "#/components/schemas/process.global.NodeJS.ResourceUsage"
+          }
+        },
+        "required": [
+          "cpu",
+          "memory",
+          "resource"
+        ]
+      },
+      "process.global.NodeJS.CpuUsage": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "type": "number"
+          },
+          "system": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "user",
+          "system"
+        ]
+      },
+      "process.global.NodeJS.MemoryUsage": {
+        "type": "object",
+        "properties": {
+          "rss": {
+            "type": "number",
+            "description": "Resident Set Size, is the amount of space occupied in the main memory device (that is a subset of the total allocated memory) for the\nprocess, including all C++ and JavaScript objects and code."
+          },
+          "heapTotal": {
+            "type": "number",
+            "title": "Refers to V8's memory usage",
+            "description": "Refers to V8's memory usage."
+          },
+          "heapUsed": {
+            "type": "number",
+            "title": "Refers to V8's memory usage",
+            "description": "Refers to V8's memory usage."
+          },
+          "external": {
+            "type": "number"
+          },
+          "arrayBuffers": {
+            "type": "number",
+            "description": "Refers to memory allocated for `ArrayBuffer`s and `SharedArrayBuffer`s, including all Node.js Buffers. This is also included\nin the external value. When Node.js is used as an embedded library, this value may be `0` because allocations for `ArrayBuffer`s\nmay not be tracked in that case."
+          }
+        },
+        "required": [
+          "rss",
+          "heapTotal",
+          "heapUsed",
+          "external",
+          "arrayBuffers"
+        ]
+      },
+      "process.global.NodeJS.ResourceUsage": {
+        "type": "object",
+        "properties": {
+          "fsRead": {
+            "type": "number"
+          },
+          "fsWrite": {
+            "type": "number"
+          },
+          "involuntaryContextSwitches": {
+            "type": "number"
+          },
+          "ipcReceived": {
+            "type": "number"
+          },
+          "ipcSent": {
+            "type": "number"
+          },
+          "majorPageFault": {
+            "type": "number"
+          },
+          "maxRSS": {
+            "type": "number"
+          },
+          "minorPageFault": {
+            "type": "number"
+          },
+          "sharedMemorySize": {
+            "type": "number"
+          },
+          "signalsCount": {
+            "type": "number"
+          },
+          "swappedOut": {
+            "type": "number"
+          },
+          "systemCPUTime": {
+            "type": "number"
+          },
+          "unsharedDataSize": {
+            "type": "number"
+          },
+          "unsharedStackSize": {
+            "type": "number"
+          },
+          "userCPUTime": {
+            "type": "number"
+          },
+          "voluntaryContextSwitches": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "fsRead",
+          "fsWrite",
+          "involuntaryContextSwitches",
+          "ipcReceived",
+          "ipcSent",
+          "majorPageFault",
+          "maxRSS",
+          "minorPageFault",
+          "sharedMemorySize",
+          "signalsCount",
+          "swappedOut",
+          "systemCPUTime",
+          "unsharedDataSize",
+          "unsharedStackSize",
+          "userCPUTime",
+          "voluntaryContextSwitches"
+        ]
+      },
+      "ISystem": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "type": "number",
+            "title": "Random Unique ID",
+            "description": "Random Unique ID."
+          },
+          "arguments": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "`process.argv`"
+          },
+          "commit": {
+            "$ref": "#/components/schemas/ISystem.ICommit",
+            "title": "Git commit info",
+            "description": "Git commit info."
+          },
+          "package": {
+            "$ref": "#/components/schemas/ISystem.IPackage",
+            "description": "`package.json`"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Creation time of this server",
+            "description": "Creation time of this server."
+          }
+        },
+        "required": [
+          "uid",
+          "arguments",
+          "commit",
+          "package",
+          "created_at"
+        ],
+        "description": "System Information."
+      },
+      "ISystem.ICommit": {
+        "type": "object",
+        "properties": {
+          "shortHash": {
+            "type": "string"
+          },
+          "branch": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "sanitizedSubject": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "author": {
+            "$ref": "#/components/schemas/ISystem.ICommit.IUser"
+          },
+          "committer": {
+            "$ref": "#/components/schemas/ISystem.ICommit.IUser"
+          },
+          "authored_at": {
+            "type": "string"
+          },
+          "committed_at": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "shortHash",
+          "branch",
+          "hash",
+          "subject",
+          "sanitizedSubject",
+          "body",
+          "author",
+          "committer",
+          "authored_at",
+          "committed_at",
+          "tags"
+        ],
+        "description": "Git commit info."
+      },
+      "ISystem.ICommit.IUser": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email"
+        ],
+        "description": "Git user account info."
+      },
+      "ISystem.IPackage": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "main": {
+            "type": "string"
+          },
+          "typings": {
+            "type": "string"
+          },
+          "scripts": {
+            "$ref": "#/components/schemas/Recordstringstring"
+          },
+          "repository": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "git"
+              },
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "url"
+            ]
+          },
+          "author": {
+            "type": "string"
+          },
+          "license": {
+            "type": "string"
+          },
+          "bugs": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "url"
+            ]
+          },
+          "homepage": {
+            "type": "string"
+          },
+          "devDependencies": {
+            "$ref": "#/components/schemas/Recordstringstring"
+          },
+          "dependencies": {
+            "$ref": "#/components/schemas/Recordstringstring"
+          },
+          "publishConfig": {
+            "type": "object",
+            "properties": {
+              "registry": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "registry"
+            ]
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "version",
+          "description",
+          "scripts",
+          "repository",
+          "author",
+          "license",
+          "bugs",
+          "homepage",
+          "dependencies"
+        ],
+        "description": "NPM package info."
+      },
+      "ISeller": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "type": "number",
+            "title": "Random Unique ID",
+            "description": "Random Unique ID."
+          },
+          "sales_co": {
+            "type": "string",
+            "description": "`sales cop`"
+          },
+          "seles_item:": {
+            "type": "string",
+            "description": "`seles item`"
+          },
+          "seller_name:": {
+            "type": "string",
+            "description": "`seller name`"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Creation time of this server",
+            "description": "Creation time of this server."
+          }
+        },
+        "required": [
+          "uid",
+          "sales_co",
+          "seles_item",
+          "seller_name",
+          "created_at"
+        ],
+        "description": "Selles Information."
+      },
+      "Recordstringstring": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "description": "Construct a type with a set of properties K of type T",
+        "additionalProperties": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Monitor"
+    }
+  ],
+  "x-samchon-emended": true
+}
