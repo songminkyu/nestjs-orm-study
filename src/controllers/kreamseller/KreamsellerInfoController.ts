@@ -1,5 +1,5 @@
 import core from "@nestia/core";
-import { Body, Controller } from "@nestjs/common";
+import { Body, Controller, BadRequestException } from "@nestjs/common";
 
 import { ISeller } from "@ORGANIZATION/PROJECT-api/lib/structures/kreamseller/ISeller";
 
@@ -21,4 +21,18 @@ export class KreamsellerInfoController {
   public async post(@Body() data: ISeller): Promise<ISeller> {
       return await this.seller.createSeller(data)
   }
+
+  @core.TypedRoute.Put(":uid/:sales_co")
+  public async put(
+      @core.TypedParam("uid") uid: string,
+      @core.TypedParam("sales_co") sales_co: string,
+      @Body() data: ISeller
+  ): Promise<ISeller> {
+    // uid와 sales_co가 일치하는지 확인
+    if (data.uid !== uid || data.sales_co !== sales_co) {
+      throw new BadRequestException("Path parameters do not match body data");
+    }
+    return await this.seller.updateSeller(data);
+  }
+
 }

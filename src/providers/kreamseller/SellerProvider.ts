@@ -24,6 +24,15 @@ export namespace SellerProvider {
             seles_item: input.seles_item,
             created_at: new Date(),
         });
+    export const update = (update:ISeller)=>
+        Prisma.validator<Prisma.sellerUpdateInput>()({
+            uid: update.uid,
+            sales_co: update.sales_co,
+            seller_name: update.seller_name,
+            seles_item: update.seles_item,
+            created_at: new Date(),
+        });
+
 }
 @Injectable()
 export class SellerService {
@@ -54,5 +63,27 @@ export class SellerService {
 
         // Transform and return the created data
         return SellerProvider.json.transform(createdSeller);
+    }
+    async updateSeller(data: ISeller) {
+        try {
+            const updateData = SellerProvider.update(data);
+
+            const updatedSeller = await this.prisma.seller.update({
+                where: {
+                    uid_sales_co: {  // 복합 unique constraint 사용
+                        uid: data.uid,
+                        sales_co: data.sales_co
+                    }
+                },
+                data: updateData
+            });
+
+            return SellerProvider.json.transform(updatedSeller);
+        } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+                throw new NotFoundException(`Seller with uid ${data.uid} and sales_co ${data.sales_co} not found`);
+            }
+            throw error;
+        }
     }
 }
