@@ -3,7 +3,6 @@ generator client {
   previewFeatures = ["postgresqlExtensions", "views"]
   binaryTargets   = ["native"]
 }
-
 datasource db {
   provider   = "postgresql"
   url        = env("POSTGRES_URL")
@@ -408,4 +407,113 @@ model seller {
   created_at  DateTime @db.Timestamptz
 
   @@id([uid, sales_co])
+}
+
+model employee {
+  emp_no     Int      @id @default(autoincrement())
+  birth_date DateTime @db.Date
+  first_name String
+  last_name  String
+  gender     String   @db.Text
+  hire_date  DateTime @db.Date
+
+  department_managers deptManager[]
+  department_employees deptEmp[]
+  titles              title[]
+  salaries            salary[]
+
+  @@map("employee")
+  @@index([hire_date], name: "idx_employee_hire_date")
+}
+
+model department {
+  dept_no   String @id @db.Text
+  dept_name String @unique @db.Text
+
+  department_managers  deptManager[]
+  department_employees deptEmp[]
+
+  @@map("department")
+}
+
+model deptManager {
+  emp_no    Int
+  dept_no   String
+  from_date DateTime @db.Date
+  to_date   DateTime @db.Date
+
+  employee    employee    @relation(fields: [emp_no], references: [emp_no], onDelete: Cascade)
+  department  department  @relation(fields: [dept_no], references: [dept_no], onDelete: Cascade)
+
+  @@id([emp_no, dept_no])
+  @@map("dept_manager")
+}
+
+model deptEmp {
+  emp_no    Int
+  dept_no   String
+  from_date DateTime @db.Date
+  to_date   DateTime @db.Date
+
+  employee    employee    @relation(fields: [emp_no], references: [emp_no], onDelete: Cascade)
+  department  department  @relation(fields: [dept_no], references: [dept_no], onDelete: Cascade)
+
+  @@id([emp_no, dept_no])
+  @@map("dept_emp")
+}
+
+model title {
+  emp_no    Int
+  title     String
+  from_date DateTime  @db.Date
+  to_date   DateTime? @db.Date
+
+  employee  employee  @relation(fields: [emp_no], references: [emp_no], onDelete: Cascade)
+
+  @@id([emp_no, title, from_date])
+  @@map("title")
+}
+
+model salary {
+  emp_no    Int
+  amount    Int
+  from_date DateTime @db.Date
+  to_date   DateTime @db.Date
+
+  employee  employee  @relation(fields: [emp_no], references: [emp_no], onDelete: Cascade)
+
+  @@id([emp_no, from_date])
+  @@map("salary")
+  @@index([amount], name: "idx_salary_amount")
+}
+
+model audit {
+  id         Int      @id @default(autoincrement())
+  operation  String   @db.Text
+  query      String?  @db.Text
+  user_name  String   @db.Text
+  changed_at DateTime @default(now()) @db.Timestamptz()
+
+  @@map("audit")
+  @@index([operation], name: "idx_audit_operation")
+  @@index([user_name], name: "idx_audit_username")
+  @@index([changed_at], name: "idx_audit_changed_at")
+}
+
+view deptEmpLatestDate {
+  emp_no    Int      @id
+  from_date DateTime @db.Date
+  to_date   DateTime @db.Date
+
+  @@map("dept_emp_latest_date")
+}
+
+view currentDeptEmp {
+  emp_no    Int
+  dept_no   String
+  from_date DateTime @db.Date
+  to_date   DateTime @db.Date
+
+  @@id([emp_no, dept_no])
+  @@map("current_dept_emp")
 }

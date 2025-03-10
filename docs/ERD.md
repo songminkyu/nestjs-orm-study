@@ -233,6 +233,66 @@ erDiagram
   String seles_item
   DateTime created_at
 }
+"employee" {
+  Int emp_no PK
+  DateTime birth_date
+  String first_name
+  String last_name
+  String gender
+  DateTime hire_date
+}
+"department" {
+  String dept_no PK
+  String dept_name UK
+}
+"dept_manager" {
+  Int emp_no FK
+  String dept_no FK
+  DateTime from_date
+  DateTime to_date
+}
+"dept_emp" {
+  Int emp_no FK
+  String dept_no FK
+  DateTime from_date
+  DateTime to_date
+}
+"title" {
+  Int emp_no FK
+  String title
+  DateTime from_date
+  DateTime to_date "nullable"
+}
+"salary" {
+  Int emp_no FK
+  Int amount
+  DateTime from_date
+  DateTime to_date
+}
+"audit" {
+  Int id PK
+  String operation
+  String query "nullable"
+  String user_name
+  DateTime changed_at
+}
+"dept_emp_latest_date" {
+  Int emp_no PK
+  DateTime from_date
+  DateTime to_date
+}
+"current_dept_emp" {
+  Int emp_no
+  String dept_no
+  DateTime from_date
+  DateTime to_date
+}
+"dept_manager" }o--|| "employee" : employee
+"dept_manager" }o--|| "department" : department
+"dept_emp" }o--|| "employee" : employee
+"dept_emp" }o--|| "department" : department
+"title" }o--|| "employee" : employee
+"salary" }o--|| "employee" : employee
 ```
 
 ### `seller`
@@ -243,3 +303,75 @@ erDiagram
   - `seller_name`: 
   - `seles_item`: 
   - `created_at`: 
+
+### `employee`
+
+**Properties**
+  - `emp_no`: 
+  - `birth_date`: 
+  - `first_name`: 
+  - `last_name`: 
+  - `gender`: 
+  - `hire_date`: 
+
+### `department`
+
+**Properties**
+  - `dept_no`: 
+  - `dept_name`: 
+
+### `dept_manager`
+
+**Properties**
+  - `emp_no`: 
+  - `dept_no`: 
+  - `from_date`: 
+  - `to_date`: 
+
+### `dept_emp`
+
+**Properties**
+  - `emp_no`: 
+  - `dept_no`: 
+  - `from_date`: 
+  - `to_date`: 
+
+### `title`
+
+**Properties**
+  - `emp_no`: 
+  - `title`: 
+  - `from_date`: 
+  - `to_date`: 
+
+### `salary`
+
+**Properties**
+  - `emp_no`: 
+  - `amount`: 
+  - `from_date`: 
+  - `to_date`: 
+
+### `audit`
+
+**Properties**
+  - `id`: 
+  - `operation`: 
+  - `query`: 
+  - `user_name`: 
+  - `changed_at`: 
+
+### `dept_emp_latest_date`
+
+**Properties**
+  - `emp_no`: 
+  - `from_date`: 
+  - `to_date`: 
+
+### `current_dept_emp`
+
+**Properties**
+  - `emp_no`: 
+  - `dept_no`: 
+  - `from_date`: 
+  - `to_date`: 
