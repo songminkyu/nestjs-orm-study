@@ -13,11 +13,15 @@ export class EmployeeinfoController {
   }
 
   @core.TypedRoute.Get("/first")
-  public async get(): Promise<IEmployee> {
+  public async get_first(): Promise<IEmployee> {
       return await this.employee.readEmployee();
   }
   @core.TypedRoute.Get("/all")
   public async get_all(): Promise<IEmployee[]> {
     return await this.employee.readAllEmployee();
+  }
+  @core.TypedRoute.Get("/:emp_no")
+  public async get_employee_by_emp_no(@core.TypedParam("emp_no") emp_no: number): Promise<IEmployee> {
+    return await this.employee.readEmployeeByEmpNo(emp_no);
   }
 }
