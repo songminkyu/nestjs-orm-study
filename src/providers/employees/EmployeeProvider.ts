@@ -46,6 +46,16 @@ export class EmployeeService {
 
         return EmployeeProvider.json.transform(employeeData);
     }
+    async readAllEmployee(){
+        const employeeData = await this.prisma.employee.findMany(
+            EmployeeProvider.json.select()
+        );
+        if (!employeeData || employeeData.length === 0) {
+            throw new NotFoundException('employee data not found');
+        }
+
+        return employeeData.map(employee => EmployeeProvider.json.transform(employee));
+    }
     async createEmployee(data: IEmployee){
         // Transform the input data using EmployeeProvider.collect
         const createData = EmployeeProvider.collect(data);

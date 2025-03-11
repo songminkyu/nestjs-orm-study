@@ -12,8 +12,12 @@ export class EmployeeinfoController {
     this.employee = new EmployeeService();
   }
 
-  @core.TypedRoute.Get()
+  @core.TypedRoute.Get("/first")
   public async get(): Promise<IEmployee> {
       return await this.employee.readEmployee();
+  }
+  @core.TypedRoute.Get("/all")
+  public async get_all(): Promise<IEmployee[]> {
+    return await this.employee.readAllEmployee();
   }
 }
