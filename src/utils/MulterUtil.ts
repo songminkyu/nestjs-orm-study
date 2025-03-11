@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import { MulterOptionsFactory } from '@nestjs/platform-express';
 
 @Injectable()
-export class MulterConfigService implements MulterOptionsFactory {
+export class MulterUtil implements MulterOptionsFactory {
     dirPath: string;
     constructor() {
         this.dirPath = path.join(process.cwd(), 'uploads');
