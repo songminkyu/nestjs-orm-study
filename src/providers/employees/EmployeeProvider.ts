@@ -57,6 +57,7 @@ export class EmployeeService {
         return employeeData.map(employee => EmployeeProvider.json.transform(employee));
     }
     async readEmployeeByEmpNo(emp_no: number) {
+
         const employeeData = await this.prisma.employee.findUnique({
             where: {
                 emp_no: emp_no
@@ -69,6 +70,38 @@ export class EmployeeService {
         }
 
         return EmployeeProvider.json.transform(employeeData);
+    }
+
+    async readEmployeeWithDepartmentHistory(emp_no: number): Promise<IEmployee> {
+        const employeeData = await this.prisma.employee.findUnique({
+            where: {
+                emp_no: emp_no
+            },
+            include: {
+                department_employees: true,
+            },
+            ...EmployeeProvider.json.select()
+        });
+
+        if (!employeeData) {
+            throw new NotFoundException(`Employee with emp_no ${emp_no} not found`);
+        }
+
+        // Date 객체를 string으로 변환하여 IEmployee 타입에 맞게 조정
+        return {
+            emp_no: employeeData.emp_no,
+            birth_date: employeeData.birth_date.toISOString().split('T')[0],
+            first_name: employeeData.first_name,
+            last_name: employeeData.last_name,
+            gender: employeeData.gender,
+            hire_date: employeeData.hire_date.toISOString().split('T')[0],
+            department_employees: employeeData.department_employees.map(de => ({
+                emp_no: de.emp_no,
+                dept_no: de.dept_no,
+                from_date: de.from_date.toISOString().split('T')[0],
+                to_date: de.to_date.toISOString().split('T')[0]
+            }))
+        };
     }
     async createEmployee(data: IEmployee){
         // Transform the input data using EmployeeProvider.collect
