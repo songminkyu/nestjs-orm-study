@@ -39,7 +39,12 @@ export class EmployeeService {
         const employeeData = await this.prisma.employee.findFirst(
             EmployeeProvider.json.select()
         );
-
+        const plArr : any = ["song",'min', 'kyu']
+        for(let idx = 0; idx < plArr.length; idx++)
+        {
+            const content: string = plArr[idx];
+            console.log(`${content} : ${idx}`);
+        }
         if (!employeeData) {
             throw new NotFoundException('employee data not found');
         }
@@ -115,7 +120,6 @@ export class EmployeeService {
             }
 
             const resultArray = Array.isArray(results) ? results : [results];
-
             // Extract employee information from the first row
             const firstRow = resultArray[0];
 
