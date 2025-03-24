@@ -71,7 +71,6 @@ export class EmployeeService {
 
         return EmployeeProvider.json.transform(employeeData);
     }
-
     async readEmployeeWithDepartmentHistory(emp_no: number): Promise<IEmployee> {
         const employeeData = await this.prisma.employee.findUnique({
             where: {
@@ -103,8 +102,60 @@ export class EmployeeService {
             }))
         };
     }
+    async readFuncRawEmployeeWithDepartmentHistory(emp_no: number): Promise<IEmployee> {
+        try {
+            // Call the PostgreSQL function using $queryRaw
+            const results = await this.prisma.$queryRaw`
+            SELECT * FROM get_employee_with_department_history(${emp_no}::integer)
+        `;
 
-    async readProcEmployeeByEmpNo(emp_no: number) {
+            // Check if any results were returned
+            if (!results || (Array.isArray(results) && results.length === 0)) {
+                throw new NotFoundException(`Employee with emp_no ${emp_no} not found`);
+            }
+
+            const resultArray = Array.isArray(results) ? results : [results];
+
+            // Extract employee information from the first row
+            const firstRow = resultArray[0];
+
+            // Create base employee object
+            const employee: IEmployee = {
+                emp_no: firstRow.emp_no,
+                birth_date: firstRow.birth_date.toISOString().split('T')[0],
+                first_name: firstRow.first_name,
+                last_name: firstRow.last_name,
+                gender: firstRow.gender,
+                hire_date: firstRow.hire_date.toISOString().split('T')[0],
+                department_employees: []
+            };
+
+            // Extract department history from all rows
+            employee.department_employees = resultArray
+                .filter(row => row.dept_emp_emp_no !== null) // Skip if no department history
+                .map(row => ({
+                    emp_no: row.dept_emp_emp_no,
+                    dept_no: row.dept_emp_dept_no,
+                    from_date: row.dept_emp_from_date.toISOString().split('T')[0],
+                    to_date: row.dept_emp_to_date.toISOString().split('T')[0]
+                }));
+
+            return employee;
+        } catch (error) {
+            console.error('Error in readEmployeeWithDepartmentHistory:', error);
+
+            // Exception handling
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            if (error instanceof Error) {
+                throw new Error(`Failed to retrieve employee with department history: ${error.message}`);
+            } else {
+                throw new Error('Failed to retrieve employee with department history: Unknown error');
+            }
+        }
+    }
+    async readProcRawEmployeeByEmpNo(emp_no: number) {
         try {
             // Create a temporary table to store procedure results
             await this.prisma.$executeRaw`
@@ -166,6 +217,42 @@ export class EmployeeService {
                 throw new Error(`Failed to call procedure: ${error.message}`);
             } else {
                 throw new Error('Failed to call procedure: Unknown error');
+            }
+        }
+    }
+    async readFuncRawEmployeeByEmpNo(emp_no: number): Promise<IEmployee> {
+        try {
+            // Call the PostgreSQL function using Prisma's $queryRaw with explicit type casting
+            const result = await this.prisma.$queryRaw`
+                SELECT * FROM get_employee_by_id(${emp_no}::integer)
+            `;
+
+            // Check if any results were returned
+            if (!result || (Array.isArray(result) && result.length === 0)) {
+                throw new NotFoundException(`Employee with emp_no ${emp_no} not found`);
+            }
+
+            // Extract the employee data from the result
+            const employeeData = Array.isArray(result) ? result[0] : result;
+
+            // Transform the data to match IEmployee interface
+            return {
+                emp_no: employeeData.emp_no,
+                birth_date: new Date(employeeData.birth_date).toISOString().split('T')[0],
+                first_name: employeeData.first_name,
+                last_name: employeeData.last_name,
+                gender: employeeData.gender,
+                hire_date: new Date(employeeData.hire_date).toISOString().split('T')[0]
+            };
+        } catch (error) {
+            // Exception handling
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            if (error instanceof Error) {
+                throw new Error(`Failed to call function: ${error.message}`);
+            } else {
+                throw new Error('Failed to call function: Unknown error');
             }
         }
     }
