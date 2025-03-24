@@ -107,7 +107,7 @@ export class EmployeeService {
             // Call the PostgreSQL function using $queryRaw
             const results = await this.prisma.$queryRaw`
             SELECT * FROM get_employee_with_department_history(${emp_no}::integer)
-        `;
+            `;
 
             // Check if any results were returned
             if (!results || (Array.isArray(results) && results.length === 0)) {
