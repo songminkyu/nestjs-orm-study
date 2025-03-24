@@ -26,4 +26,8 @@ export class EmployeeinfoController {
   public async get_employee_with_department(@core.TypedParam("emp_no") emp_no: number): Promise<IEmployee> {
     return await this.employee.readEmployeeWithDepartmentHistory(emp_no);
   }
+  @core.TypedRoute.Get("/proc/:emp_no")
+  public async get_proc_employee_by_emp_no(@core.TypedParam("emp_no") emp_no: number): Promise<IEmployee> {
+    return await this.employee.readProcEmployeeByEmpNo(emp_no);
+  }
 }
