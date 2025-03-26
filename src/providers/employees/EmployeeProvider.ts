@@ -8,11 +8,11 @@ export namespace EmployeeProvider {
             input: Prisma.employeeGetPayload<ReturnType<typeof select>>,
         ): IEmployee => ({
             emp_no: input.emp_no,
-            birth_date: input.birth_date.toISOString(),
+            birth_date: input.birth_date.toISOString().split('T')[0],
             first_name: input.first_name,
             last_name: input.last_name,
             gender: input.gender,
-            hire_date:input.hire_date.toISOString()
+            hire_date:input.hire_date.toISOString().split('T')[0]
         });
         export const select = () =>
             Prisma.validator<Prisma.employeeFindManyArgs>()({});
@@ -93,12 +93,7 @@ export class EmployeeService {
 
         // Date 객체를 string으로 변환하여 IEmployee 타입에 맞게 조정
         return {
-            emp_no: employeeData.emp_no,
-            birth_date: employeeData.birth_date.toISOString().split('T')[0],
-            first_name: employeeData.first_name,
-            last_name: employeeData.last_name,
-            gender: employeeData.gender,
-            hire_date: employeeData.hire_date.toISOString().split('T')[0],
+            ...EmployeeProvider.json.transform(employeeData),
             department_employees: employeeData.department_employees.map(de => ({
                 emp_no: de.emp_no,
                 dept_no: de.dept_no,
@@ -111,7 +106,7 @@ export class EmployeeService {
         try {
             // Call the PostgreSQL function using $queryRaw
             const results = await this.prisma.$queryRaw`
-            SELECT * FROM get_employee_with_department_history(${emp_no}::integer)
+                SELECT * FROM get_employee_with_department_history(${emp_no}::integer)
             `;
 
             // Check if any results were returned
@@ -123,32 +118,20 @@ export class EmployeeService {
             // Extract employee information from the first row
             const firstRow = resultArray[0];
 
-            // Create base employee object
-            const employee: IEmployee = {
-                emp_no: firstRow.emp_no,
-                birth_date: firstRow.birth_date.toISOString().split('T')[0],
-                first_name: firstRow.first_name,
-                last_name: firstRow.last_name,
-                gender: firstRow.gender,
-                hire_date: firstRow.hire_date.toISOString().split('T')[0],
-                department_employees: []
+            // 변환 함수 사용하고 바로 department_employees를 추가해서 반환
+            return {
+                ...EmployeeProvider.json.transform(firstRow),
+                department_employees: resultArray
+                    .filter(row => row.dept_emp_emp_no !== null)
+                    .map(row => ({
+                        emp_no: row.dept_emp_emp_no,
+                        dept_no: row.dept_emp_dept_no,
+                        from_date: row.dept_emp_from_date.toISOString().split('T')[0],
+                        to_date: row.dept_emp_to_date.toISOString().split('T')[0]
+                    }))
             };
-
-            // Extract department history from all rows
-            employee.department_employees = resultArray
-                .filter(row => row.dept_emp_emp_no !== null) // Skip if no department history
-                .map(row => ({
-                    emp_no: row.dept_emp_emp_no,
-                    dept_no: row.dept_emp_dept_no,
-                    from_date: row.dept_emp_from_date.toISOString().split('T')[0],
-                    to_date: row.dept_emp_to_date.toISOString().split('T')[0]
-                }));
-
-            return employee;
         } catch (error) {
-            console.error('Error in readEmployeeWithDepartmentHistory:', error);
-
-            // Exception handling
+            // 에러 처리 부분은 동일하게 유지
             if (error instanceof NotFoundException) {
                 throw error;
             }
@@ -159,7 +142,7 @@ export class EmployeeService {
             }
         }
     }
-    async readProcRawEmployeeByEmpNo(emp_no: number) {
+    async readProcRawEmployeeByEmpNo(emp_no: number) : Promise<IEmployee> {
         try {
             // 1. 입력값 유효성 검사 강화
             if (!Number.isInteger(emp_no) || emp_no <= 0) {
@@ -231,16 +214,7 @@ export class EmployeeService {
 
                 // 8. 결과 변환
                 const employeeData = Array.isArray(result) ? result[0] : result;
-                return {
-                    emp_no: Number(employeeData.emp_no),
-                    first_name: employeeData.first_name.toString(),
-                    last_name: employeeData.last_name.toString(),
-                    birth_date: new Date(employeeData.birth_date)
-                        .toISOString().split('T')[0],
-                    gender: employeeData.gender.toString(),
-                    hire_date: new Date(employeeData.hire_date)
-                        .toISOString().split('T')[0]
-                };
+                return EmployeeProvider.json.transform(employeeData);
             });
 
         } catch (error) {
@@ -266,14 +240,7 @@ export class EmployeeService {
             const employeeData = Array.isArray(result) ? result[0] : result;
 
             // Transform the data to match IEmployee interface
-            return {
-                emp_no: employeeData.emp_no,
-                birth_date: new Date(employeeData.birth_date).toISOString().split('T')[0],
-                first_name: employeeData.first_name,
-                last_name: employeeData.last_name,
-                gender: employeeData.gender,
-                hire_date: new Date(employeeData.hire_date).toISOString().split('T')[0]
-            };
+            return EmployeeProvider.json.transform(employeeData);
         } catch (error) {
             // Exception handling
             if (error instanceof NotFoundException) {
