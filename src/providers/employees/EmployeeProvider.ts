@@ -184,38 +184,36 @@ export class EmployeeService {
                 await tx.$executeRaw`SELECT set_config('app.emp_no', ${emp_no}::text, true)`;
 
                 // 5. 프로시저 실행 (Unsafe로 분리 실행)
-                await tx.$executeRawUnsafe(`
-                DO $$
-                DECLARE
-                    v_emp_no INTEGER;
-                    v_first_name VARCHAR;
-                    v_last_name VARCHAR;
-                    v_birth_date DATE;
-                    v_gender CHAR(1);
-                    v_hire_date DATE;
-                BEGIN
-                    -- 세션 변수에서 값 추출
-                    PERFORM set_config('app.emp_no', current_setting('app.emp_no'), true);
-                    
-                    -- 프로시저 실행
-                    CALL get_proc_employee_by_id(
-                        current_setting('app.emp_no')::INTEGER,
-                        v_emp_no, v_first_name, v_last_name, 
-                        v_birth_date, v_gender, v_hire_date
-                    );
-                    
-                    -- 임시 테이블에 결과 저장
-                    INSERT INTO temp_employee_proc_result 
-                    VALUES (
-                        v_emp_no, 
-                        v_first_name, 
-                        v_last_name, 
-                        v_birth_date, 
-                        v_gender, 
-                        v_hire_date
-                    );
-                END $$;
-            `);
+                await tx.$executeRaw`
+                    DO $$
+                    DECLARE
+                        i_emp_no INTEGER := current_setting('app.emp_no')::INTEGER;
+                        o_emp_no INTEGER;
+                        o_first_name VARCHAR;
+                        o_last_name VARCHAR;
+                        o_birth_date DATE;
+                        o_gender CHAR(1);
+                        o_hire_date DATE;
+                    BEGIN
+                        -- 프로시저 실행
+                        CALL get_proc_employee_by_id(
+                            i_emp_no,
+                            o_emp_no, o_first_name, o_last_name, 
+                            o_birth_date, o_gender, o_hire_date
+                        );
+                        
+                        -- 임시 테이블에 결과 저장
+                        INSERT INTO temp_employee_proc_result 
+                        VALUES (
+                            o_emp_no, 
+                            o_first_name, 
+                            o_last_name, 
+                            o_birth_date, 
+                            o_gender, 
+                            o_hire_date
+                        );
+                    END $$;
+                    `;
 
                 // 6. 결과 조회
                 const result = await tx.$queryRaw`
