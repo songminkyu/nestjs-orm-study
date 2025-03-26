@@ -161,67 +161,95 @@ export class EmployeeService {
     }
     async readProcRawEmployeeByEmpNo(emp_no: number) {
         try {
-            // Create a temporary table to store procedure results
-            await this.prisma.$executeRaw`
-                CREATE TABLE IF NOT EXISTS temp_employee_proc_result (
-                    emp_no INTEGER,
-                    first_name VARCHAR(255),
-                    last_name VARCHAR(255),
-                    birth_date DATE,
-                    gender CHAR(1),
-                    hire_date DATE
-                );
+            // 1. 입력값 유효성 검사 강화
+            if (!Number.isInteger(emp_no) || emp_no <= 0) {
+                throw new Error('유효하지 않은 사원 번호 형식입니다');
+            }
+
+            // 2. 트랜잭션 내부에서 모든 작업 처리
+            return await this.prisma.$transaction(async (tx) => {
+                // 3. 임시 테이블 생성 (트랜잭션 종료 시 자동 삭제)
+                await tx.$executeRaw`
+                CREATE TEMP TABLE temp_employee_proc_result (
+                    emp_no INTEGER PRIMARY KEY,
+                    first_name VARCHAR(255) NOT NULL,
+                    last_name VARCHAR(255) NOT NULL,
+                    birth_date DATE NOT NULL,
+                    gender CHAR(1) CHECK (gender IN ('M', 'F')),
+                    hire_date DATE NOT NULL
+                ) ON COMMIT DROP;
             `;
 
-            // Execute the procedure and store results in the temporary table
-            await this.prisma.$executeRawUnsafe(`
-            DO $$
-            DECLARE
-                v_emp_no INTEGER;
-                v_first_name VARCHAR;
-                v_last_name VARCHAR;
-                v_birth_date DATE;
-                v_gender CHAR(1);
-                v_hire_date DATE;
-            BEGIN
-                CALL get_proc_employee_by_id(${emp_no}, v_emp_no, v_first_name, v_last_name, v_birth_date, v_gender, v_hire_date);
-                
-                INSERT INTO temp_employee_proc_result 
-                VALUES (v_emp_no, v_first_name, v_last_name, v_birth_date, v_gender, v_hire_date);
-            END $$;`);
+                // 4. 세션 변수 설정 (독립 실행)
+                await tx.$executeRaw`SELECT set_config('app.emp_no', ${emp_no}::text, true)`;
 
-            // Query the results from the temporary table
-            const [result] = await Promise.all([this.prisma.$queryRaw`
-                SELECT * FROM temp_employee_proc_result;
-            `]);
+                // 5. 프로시저 실행 (Unsafe로 분리 실행)
+                await tx.$executeRawUnsafe(`
+                DO $$
+                DECLARE
+                    v_emp_no INTEGER;
+                    v_first_name VARCHAR;
+                    v_last_name VARCHAR;
+                    v_birth_date DATE;
+                    v_gender CHAR(1);
+                    v_hire_date DATE;
+                BEGIN
+                    -- 세션 변수에서 값 추출
+                    PERFORM set_config('app.emp_no', current_setting('app.emp_no'), true);
+                    
+                    -- 프로시저 실행
+                    CALL get_proc_employee_by_id(
+                        current_setting('app.emp_no')::INTEGER,
+                        v_emp_no, v_first_name, v_last_name, 
+                        v_birth_date, v_gender, v_hire_date
+                    );
+                    
+                    -- 임시 테이블에 결과 저장
+                    INSERT INTO temp_employee_proc_result 
+                    VALUES (
+                        v_emp_no, 
+                        v_first_name, 
+                        v_last_name, 
+                        v_birth_date, 
+                        v_gender, 
+                        v_hire_date
+                    );
+                END $$;
+            `);
 
-            // Check if any results were returned
-            if (!result || (Array.isArray(result) && result.length === 0)) {
-                throw new NotFoundException(`Employee with emp_no ${emp_no} not found`);
-            }
+                // 6. 결과 조회
+                const result = await tx.$queryRaw`
+                    SELECT * FROM temp_employee_proc_result
+                    WHERE emp_no = ${emp_no}::INTEGER
+                LIMIT 1;
+                `;
 
-            // Extract the employee data from the result
-            const employeeData = Array.isArray(result) ? result[0] : result;
+                // 7. 결과 검증
+                if (!result || (Array.isArray(result) && result.length === 0)) {
+                    throw new NotFoundException(
+                        `사원 번호 ${emp_no}에 해당하는 정보가 없습니다`
+                    );
+                }
 
-            // Transform the data to match IEmployee interface
-            return {
-                emp_no: employeeData.emp_no,
-                birth_date: new Date(employeeData.birth_date).toISOString().split('T')[0],
-                first_name: employeeData.first_name,
-                last_name: employeeData.last_name,
-                gender: employeeData.gender,
-                hire_date: new Date(employeeData.hire_date).toISOString().split('T')[0]
-            };
+                // 8. 결과 변환
+                const employeeData = Array.isArray(result) ? result[0] : result;
+                return {
+                    emp_no: Number(employeeData.emp_no),
+                    first_name: employeeData.first_name.toString(),
+                    last_name: employeeData.last_name.toString(),
+                    birth_date: new Date(employeeData.birth_date)
+                        .toISOString().split('T')[0],
+                    gender: employeeData.gender.toString(),
+                    hire_date: new Date(employeeData.hire_date)
+                        .toISOString().split('T')[0]
+                };
+            });
+
         } catch (error) {
-            // 예외 처리
-            if (error instanceof NotFoundException) {
-                throw error;
-            }
-            if (error instanceof Error) {
-                throw new Error(`Failed to call procedure: ${error.message}`);
-            } else {
-                throw new Error('Failed to call procedure: Unknown error');
-            }
+            // 9. 오류 처리
+            if (error instanceof NotFoundException) throw error;
+            const message = error instanceof Error ? error.message : '알 수 없는 오류';
+            throw new Error(`사원 정보 조회 실패: ${message}`);
         }
     }
     async readFuncRawEmployeeByEmpNo(emp_no: number): Promise<IEmployee> {
